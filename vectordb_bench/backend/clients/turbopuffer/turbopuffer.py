@@ -11,7 +11,10 @@ from ..api import DBCaseConfig, VectorDB
 
 log = logging.getLogger(__name__)
 
-TURBOPUFFER_MAX_NUM_PER_BATCH = 1000
+# Turbopuffer batch limits (conservative estimates based on typical HTTP payload limits)
+# Actual limits may be higher - Turbopuffer supports large payloads via HTTP/2
+TURBOPUFFER_MAX_NUM_PER_BATCH = 5000  # Maximum number of vectors per batch
+TURBOPUFFER_MAX_SIZE_PER_BATCH = 256 * 1024 * 1024  # 256MB payload limit (conservative)
 
 
 class Turbopuffer(VectorDB):
@@ -34,8 +37,19 @@ class Turbopuffer(VectorDB):
         self.namespace = db_config.get("namespace", "vdbbench")
         self.api_key = db_config.get("api_key", "")
         self.region = db_config.get("region", "us-east-1")
+        self.consistency_level = db_config.get("consistency_level", "strong")
         self.dim = dim
-        self.batch_size = TURBOPUFFER_MAX_NUM_PER_BATCH
+
+        # Calculate optimal batch size based on dimension and payload size
+        # Each vector: dim * 4 bytes (float32) + ~100 bytes overhead (id, metadata)
+        bytes_per_vector = (dim * 4) + 100
+        max_vectors_by_size = TURBOPUFFER_MAX_SIZE_PER_BATCH // bytes_per_vector
+        # self.batch_size = min(max_vectors_by_size, TURBOPUFFER_MAX_NUM_PER_BATCH)
+        self.batch_size = max_vectors_by_size
+
+        log.info(f"Turbopuffer batch size: {self.batch_size} vectors (dim={dim}, ~{self.batch_size * bytes_per_vector / 1024 / 1024:.2f}MB per batch)")
+        log.info(f"Turbopuffer consistency level: {self.consistency_level}")
+
         self.with_scalar_labels = with_scalar_labels
 
         # Create temporary client for initialization only
@@ -66,7 +80,7 @@ class Turbopuffer(VectorDB):
     @contextmanager
     def init(self):
         """Create and destroy connections to database."""
-        self.client = tpuf.Turbopuffer(api_key=self.api_key, region=self.region)
+        self.client = tpuf.Turbopuffer(api_key=self.api_key, region=self.region, timeout=600)
         self.ns = self.client.namespace(self.namespace)
         yield
         self.ns = None
@@ -122,11 +136,18 @@ class Turbopuffer(VectorDB):
         try:
             filters = self.expr if hasattr(self, 'expr') and self.expr else None
 
+            # Build consistency parameter based on configured level
+            consistency = None
+            if self.consistency_level == "eventual":
+                consistency = {"level": "eventual"}
+            # For "strong" consistency, we can omit the parameter (default behavior)
+
             result = self.ns.query(
                 rank_by=("vector", "ANN", query),
                 top_k=k,
                 distance_metric=self.distance_metric,
                 filters=filters,
+                consistency=consistency,
             )
 
             # Extract IDs from results

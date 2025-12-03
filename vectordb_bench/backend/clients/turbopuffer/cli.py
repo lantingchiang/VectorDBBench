@@ -38,6 +38,16 @@ class TurbopufferTypedDict(TypedDict):
             show_default=True
         )
     ]
+    consistency_level: Annotated[
+        str,
+        click.option(
+            "--consistency-level",
+            type=click.Choice(["strong", "eventual"], case_sensitive=False),
+            help="Query consistency level (strong or eventual)",
+            default="strong",
+            show_default=True
+        )
+    ]
     metric: Annotated[
         str,
         click.option(
@@ -73,6 +83,7 @@ def Turbopuffer(**parameters: Unpack[TurbopufferIndexTypedDict]):
             api_key=SecretStr(parameters["api_key"]),
             region=parameters["region"],
             namespace=parameters["namespace"],
+            consistency_level=parameters.get("consistency_level", "strong"),
         ),
         db_case_config=TurbopufferIndexConfig(
             metric_type=metric_type

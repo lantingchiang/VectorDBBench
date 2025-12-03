@@ -7,12 +7,14 @@ class TurbopufferConfig(DBConfig):
     api_key: SecretStr
     region: str = "us-east-1"
     namespace: str = "vdbbench"
+    consistency_level: str = "strong"  # Options: "strong" or "eventual"
 
     def to_dict(self) -> dict:
         return {
             "api_key": self.api_key.get_secret_value() if self.api_key else "",
             "region": self.region,
             "namespace": self.namespace,
+            "consistency_level": self.consistency_level,
         }
 
 
