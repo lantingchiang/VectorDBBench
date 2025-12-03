@@ -19,9 +19,9 @@ class S3VectorsTypedDict(TypedDict):
     region_name: Annotated[
         str, click.option("--region", type=str, help="AWS region for S3 bucket (eg. us-east-1)", default="us-east-1")
     ]
-    access_key_id: Annotated[str, click.option("--access_key_id", type=str, help="AWS access key ID", required=True)]
+    access_key_id: Annotated[str, click.option("--access_key_id", type=str, help="AWS access key ID")]
     secret_access_key: Annotated[
-        str, click.option("--secret_access_key", type=str, help="AWS secret access key", required=True)
+        str, click.option("--secret_access_key", type=str, help="AWS secret access key")
     ]
 
     bucket: Annotated[str, click.option("--bucket", type=str, help="S3 bucket name", required=True)]
@@ -51,8 +51,8 @@ def S3Vectors(**parameters: Unpack[S3VectorsIndexTypedDict]):
         db=DB.S3Vectors,
         db_config=S3VectorsConfig(
             region_name=parameters["region"],
-            access_key_id=SecretStr(parameters["access_key_id"]),
-            secret_access_key=SecretStr(parameters["secret_access_key"]),
+            access_key_id=SecretStr(parameters["access_key_id"]) if parameters["access_key_id"] else None,
+            secret_access_key=SecretStr(parameters["secret_access_key"]) if parameters["secret_access_key"] else None,
             bucket_name=parameters["bucket"],
             index_name=parameters["index"] if parameters["index"] else "vdbbench-index",
         ),

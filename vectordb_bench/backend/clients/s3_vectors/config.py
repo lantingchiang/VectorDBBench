@@ -1,12 +1,13 @@
 from pydantic import BaseModel, SecretStr
+from typing import Optional
 
 from ..api import DBCaseConfig, DBConfig, MetricType
 
 
 class S3VectorsConfig(DBConfig):
     region_name: str = "us-west-2"
-    access_key_id: SecretStr
-    secret_access_key: SecretStr
+    access_key_id: Optional[SecretStr] = None
+    secret_access_key: Optional[SecretStr] = None
     bucket_name: str
     index_name: str = "vdbbench-index"
 

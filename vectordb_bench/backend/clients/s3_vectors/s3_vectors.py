@@ -50,8 +50,8 @@ class S3Vectors(VectorDB):
         client = boto3.client(
             service_name="s3vectors",
             region_name=self.region_name,
-            aws_access_key_id=self.access_key_id,
-            aws_secret_access_key=self.secret_access_key,
+            # aws_access_key_id=self.access_key_id,
+            # aws_secret_access_key=self.secret_access_key,
         )
 
         if drop_old:
@@ -84,8 +84,8 @@ class S3Vectors(VectorDB):
         self.client = boto3.client(
             service_name="s3vectors",
             region_name=self.region_name,
-            aws_access_key_id=self.access_key_id,
-            aws_secret_access_key=self.secret_access_key,
+            # aws_access_key_id=self.access_key_id,
+            # aws_secret_access_key=self.secret_access_key,
         )
 
         yield
