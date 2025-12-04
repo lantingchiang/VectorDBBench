@@ -2,6 +2,7 @@
 
 import logging
 from contextlib import contextmanager
+import time
 
 import turbopuffer as tpuf
 
@@ -83,8 +84,6 @@ class Turbopuffer(VectorDB):
         self.client = tpuf.Turbopuffer(api_key=self.api_key, region=self.region, timeout=600)
         self.ns = self.client.namespace(self.namespace)
         yield
-        self.ns = None
-        self.client = None
 
     def optimize(self, data_size: int | None = None):
         """Turbopuffer is serverless and auto-optimizes."""
@@ -117,7 +116,10 @@ class Turbopuffer(VectorDB):
                     vectors.append(row)
 
                 # Upsert vectors to turbopuffer
-                self.ns.write(upsert_rows=vectors, distance_metric=self.distance_metric, disable_backpressure=True)
+                start_write = time.perf_counter()
+                resp = self.ns.write(upsert_rows=vectors, distance_metric=self.distance_metric, disable_backpressure=True)
+                log.info(f"Turbopuffer write API call duration: {time.perf_counter() - start_write}")
+                # log.info(f"Turbopuffer write response: {resp}")
                 insert_count += batch_end_offset - batch_start_offset
 
         except Exception as e:
