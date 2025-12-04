@@ -41,8 +41,8 @@ class Turbopuffer(VectorDB):
         self.dim = dim
 
         # Calculate optimal batch size based on dimension and payload size
-        # Each vector: dim * 4 bytes (float32) + ~100 bytes overhead (id, metadata)
-        bytes_per_vector = (dim * 4) + 100
+        # Each vector: dim * 8 bytes (float64) + ~100 bytes overhead (id, metadata)
+        bytes_per_vector = (dim * 8) + 100
         max_vectors_by_size = TURBOPUFFER_MAX_SIZE_PER_BATCH // bytes_per_vector
         # self.batch_size = min(max_vectors_by_size, TURBOPUFFER_MAX_NUM_PER_BATCH)
         self.batch_size = max_vectors_by_size
@@ -117,7 +117,7 @@ class Turbopuffer(VectorDB):
                     vectors.append(row)
 
                 # Upsert vectors to turbopuffer
-                self.ns.write(upsert_rows=vectors, distance_metric=self.distance_metric)
+                self.ns.write(upsert_rows=vectors, distance_metric=self.distance_metric, disable_backpressure=True)
                 insert_count += batch_end_offset - batch_start_offset
 
         except Exception as e:
